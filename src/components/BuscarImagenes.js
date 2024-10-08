@@ -7,6 +7,8 @@ const BuscarImagenes = () => {
     const [orientacion, setOrientacion] = useState('');
     const [color, setColor] = useState('');
     const [imagenes, setImagenes] = useState([]);
+    const [modalOpen, setModalOpen] = useState(false);
+    const [selectedImage, setSelectedImage] = useState('');
 
     const buscarImagenes = async (e) => {
         e.preventDefault();
@@ -25,6 +27,22 @@ const BuscarImagenes = () => {
             console.error("Error al buscar imágenes:", error);
         }
     };
+
+    const abrirModal = (imagen) => {
+        setSelectedImage(imagen);
+        setModalOpen(true);
+    }
+
+    const cerrarModal = () => {
+        setModalOpen(false);
+        setSelectedImage('');
+    }
+
+    const manejarClickFuera = (e) => {
+        if (e.target === e.currentTarget) {
+            cerrarModal();
+        }
+    }
 
     return (
         <div className="max-w-4xl mx-auto p-10">
@@ -64,7 +82,7 @@ const BuscarImagenes = () => {
                         <option value="squarish">Cuadrado</option>
                     </select>
                 </div>
-                <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-2">
+                {/* <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-2">
                     <select
                         id="color"
                         onChange={(e) => setColor(e.target.value)}
@@ -76,7 +94,7 @@ const BuscarImagenes = () => {
                         <option value="white">Blanco</option>
                         <option value="yellow">Amarillo</option>
                     </select>
-                </div>
+                </div> */}
                 <button
                     type="submit"
                     className="w-full bg-blue-500 text-white p-3 rounded hover:bg-green-600 transition"
@@ -84,16 +102,23 @@ const BuscarImagenes = () => {
                     Buscar
                 </button>
             </form>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="flex flex-wrap gap-3 justify-center">
                 {imagenes.map((imagen) => (
                     <img
                         key={imagen.id}
                         src={imagen.urls.small}
                         alt={imagen.alt_description}
-                        className="w-full h-auto rounded shadow-lg"
+                        className="w-64 h-64 object-cover rounded transition hover:scale-105 duration-300"
+                        onClick={() => abrirModal(imagen.urls.full)}
                     />
                 ))}
             </div>
+            {modalOpen && (
+                <div onClick={manejarClickFuera} className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center'>
+                    <img src={selectedImage} alt="Imagen completa" className="max-w-full max-h-full" />
+                    <button onClick={cerrarModal} className="absolute top-5 right-5 text-white text-2xl">x</button>
+                </div>
+            )}
         </div>
     );
 
