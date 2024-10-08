@@ -31,8 +31,8 @@ const BuscarImagenes = () => {
             <h1 className="text-2xl font-bold mb-5 text-center">Buscar imágenes</h1>
             <form onSubmit={buscarImagenes} className="space-y-4 mb-5">
                 <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-2">
-                    <label htmlFor="buscar" className="sm:w-1/4">Buscar imagen:</label>
                     <input
+                        placeholder='Buscar imagen'
                         id="buscar"
                         type="text"
                         value={query}
@@ -42,35 +42,35 @@ const BuscarImagenes = () => {
                     />
                 </div>
                 <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-2">
-                    <label htmlFor="cantidad" className="sm:w-1/4">Cantidad de imágenes:</label>
                     <input
+                        placeholder='Cantidad de imágenes'
                         id="cantidad"
                         type="number"
                         value={cantidad}
                         onChange={(e) => setCantidad(e.target.value)}
-                        min="1"
+                        //min="1"
                         className="w-full sm:w-3/4 p-3 border rounded"
                     />
                 </div>
                 <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-2">
-                    <label htmlFor="orientacion" className="sm:w-1/4">Todas las orientaciones:</label>
                     <select
                         id="orientacion"
                         onChange={(e) => setOrientacion(e.target.value)}
                         className="w-full sm:w-3/4 p-3 border rounded"
                     >
+                        <option value="">Todas las orientaciones</option>
                         <option value="landscape">Horizontal</option>
                         <option value="portrait">Vertical</option>
                         <option value="squarish">Cuadrado</option>
                     </select>
                 </div>
                 <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-2">
-                    <label htmlFor="color" className="sm:w-1/4">Indica el color:</label>
                     <select
                         id="color"
                         onChange={(e) => setColor(e.target.value)}
                         className="w-full sm:w-3/4 p-3 border rounded"
                     >
+                        <option value="">Todos los colores</option>
                         <option value="black_and_white">Blanco y Negro</option>
                         <option value="black">Negro</option>
                         <option value="white">Blanco</option>
