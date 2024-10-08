@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 
+const reload = () => {
+    window.location.reload();
+}
+
 const BuscarImagenes = () => {
     const [query, setQuery] = useState('');
     const [cantidad, setCantidad] = useState(1);
@@ -46,7 +50,7 @@ const BuscarImagenes = () => {
 
     return (
         <div className="max-w-4xl mx-auto p-10">
-            <h1 className="text-2xl font-bold mb-5 text-center">Buscar imágenes</h1>
+            <h1 onClick={reload} className="text-2xl font-bold mb-5 text-center cursor-pointer">Buscar imágenes</h1>
             <form onSubmit={buscarImagenes} className="space-y-4 mb-5">
                 <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-2">
                     <input
@@ -82,7 +86,7 @@ const BuscarImagenes = () => {
                         <option value="squarish">Cuadrado</option>
                     </select>
                 </div>
-                {/* <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-2">
+                <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-2">
                     <select
                         id="color"
                         onChange={(e) => setColor(e.target.value)}
@@ -94,7 +98,7 @@ const BuscarImagenes = () => {
                         <option value="white">Blanco</option>
                         <option value="yellow">Amarillo</option>
                     </select>
-                </div> */}
+                </div>
                 <button
                     type="submit"
                     className="w-full bg-blue-500 text-white p-3 rounded hover:bg-green-600 transition"
