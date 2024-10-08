@@ -12,7 +12,7 @@ const BuscarImagenes = () => {
         e.preventDefault();
         try {
             // http://localhost:5000/unsplash
-            const respuesta = await axios.get(`app-fotos-backend-production.up.railway.app/unsplash`, {
+            const respuesta = await axios.get(`https://app-fotos-backend-production.up.railway.app/unsplash`, {
                 params: {
                     query,
                     cantidad,
