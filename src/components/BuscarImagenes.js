@@ -11,7 +11,8 @@ const BuscarImagenes = () => {
     const buscarImagenes = async (e) => {
         e.preventDefault();
         try {
-            const respuesta = await axios.get(`http://localhost:5000/unsplash`, {
+            // http://localhost:5000/unsplash
+            const respuesta = await axios.get(`app-fotos-backend-production.up.railway.app/unsplash`, {
                 params: {
                     query,
                     cantidad,
