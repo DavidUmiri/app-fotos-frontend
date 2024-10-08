@@ -38,7 +38,7 @@ const BuscarImagenes = () => {
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
                         required
-                        className="w-full sm:w-3/4 p-3 border rounded"
+                        className="w-full sm:w-4/4 p-3 border rounded"
                     />
                 </div>
                 <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-2">
@@ -48,15 +48,15 @@ const BuscarImagenes = () => {
                         type="number"
                         value={cantidad}
                         onChange={(e) => setCantidad(e.target.value)}
-                        //min="1"
-                        className="w-full sm:w-3/4 p-3 border rounded"
+                        min="1"
+                        className="w-full sm:w-4/4 p-3 border rounded"
                     />
                 </div>
                 <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-2">
                     <select
                         id="orientacion"
                         onChange={(e) => setOrientacion(e.target.value)}
-                        className="w-full sm:w-3/4 p-3 border rounded"
+                        className="w-full sm:w-4/4 p-3 border rounded"
                     >
                         <option value="">Todas las orientaciones</option>
                         <option value="landscape">Horizontal</option>
@@ -68,7 +68,7 @@ const BuscarImagenes = () => {
                     <select
                         id="color"
                         onChange={(e) => setColor(e.target.value)}
-                        className="w-full sm:w-3/4 p-3 border rounded"
+                        className="w-full sm:w-4/4 p-3 border rounded"
                     >
                         <option value="">Todos los colores</option>
                         <option value="black_and_white">Blanco y Negro</option>
