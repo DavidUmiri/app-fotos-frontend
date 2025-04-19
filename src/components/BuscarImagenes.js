@@ -28,7 +28,7 @@ const BuscarImagenes = () => {
                 const respuesta = await axios.get(`https://app-fotos-backend-production.up.railway.app/unsplash`, {
                     params: {
                         query: temaRandom,
-                        cantidad: 12
+                        cantidad: 8
                     },
                     timeout: 10000
                 });
