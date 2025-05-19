@@ -1,9 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
+const UNSPLASH_ACCESS_KEY = process.env.REACT_APP_UNSPLASH_ACCESS_KEY;
+
+if (!UNSPLASH_ACCESS_KEY) {
+    console.error('La clave de API de Unsplash no está configurada. Por favor, configure la variable de entorno REACT_APP_UNSPLASH_ACCESS_KEY');
+}
+
+// Crear una instancia de axios con la configuración base
+const unsplashApi = axios.create({
+    baseURL: 'https://api.unsplash.com',
+    headers: {
+        'Authorization': `Client-ID ${UNSPLASH_ACCESS_KEY}`,
+        'Accept-Version': 'v1'
+    }
+});
+
 const BuscarImagenes = () => {
     const [query, setQuery] = useState('');
-    const [cantidad, setCantidad] = useState(10);
+    const [cantidad, setCantidad] = useState(8);
     const [orientacion, setOrientacion] = useState('');
     const [color, setColor] = useState('');
     const [imagenes, setImagenes] = useState([]);
@@ -13,30 +28,43 @@ const BuscarImagenes = () => {
     const [initialLoading, setInitialLoading] = useState(true);
     const [error, setError] = useState(null);
     const [searchPerformed, setSearchPerformed] = useState(false);
+    const [rateLimit, setRateLimit] = useState({ remaining: '?', limit: '50', reset: null });
 
     // Función para obtener imágenes aleatorias al cargar la página
     useEffect(() => {
         const cargarImagenesIniciales = async () => {
             try {
-                // Temas populares para búsqueda aleatoria inicial
                 const temasAleatorios = [
                     'nature', 'architecture', 'travel', 
                     'technology', 'food', 'animals'
                 ];
                 const temaRandom = temasAleatorios[Math.floor(Math.random() * temasAleatorios.length)];
                 
-                const respuesta = await axios.get(`https://app-fotos-backend-production.up.railway.app/unsplash`, {
+                const response = await unsplashApi.get('/search/photos', {
                     params: {
                         query: temaRandom,
-                        cantidad: 8
-                    },
-                    timeout: 10000
+                        per_page: 8,
+                    }
                 });
                 
-                setImagenes(respuesta.data);
+                if (response.headers['x-ratelimit-remaining']) {
+                    setRateLimit({
+                        remaining: response.headers['x-ratelimit-remaining'],
+                        limit: response.headers['x-ratelimit-limit'],
+                        reset: new Date(response.headers['x-ratelimit-reset'] * 1000)
+                    });
+                }
+
+                setImagenes(response.data.results);
             } catch (error) {
-                console.error("Error al cargar imágenes iniciales:", error);
-                setError("No se pudieron cargar las imágenes iniciales. Por favor intenta buscar algo.");
+                console.error("Error al cargar imágenes iniciales:", error.response || error);
+                let mensajeError = "No se pudieron cargar las imágenes iniciales.";
+                if (error.response?.status === 403) {
+                    mensajeError += " Error de autenticación con Unsplash.";
+                } else if (error.response?.status === 429) {
+                    mensajeError += " Se ha alcanzado el límite de solicitudes.";
+                }
+                setError(mensajeError);
             } finally {
                 setInitialLoading(false);
             }
@@ -52,22 +80,36 @@ const BuscarImagenes = () => {
         setSearchPerformed(true);
         
         try {
-            const respuesta = await axios.get(`https://app-fotos-backend-production.up.railway.app/unsplash`, {
+            const response = await unsplashApi.get('/search/photos', {
                 params: {
                     query,
-                    cantidad,
-                    orientacion,
-                    color,
-                },
-                timeout: 10000
+                    per_page: cantidad,
+                    orientation: orientacion || null,
+                    color: color || null,
+                }
             });
-            setImagenes(respuesta.data);
-            if (respuesta.data.length === 0) {
+
+            if (response.headers['x-ratelimit-remaining']) {
+                setRateLimit({
+                    remaining: response.headers['x-ratelimit-remaining'],
+                    limit: response.headers['x-ratelimit-limit'],
+                    reset: new Date(response.headers['x-ratelimit-reset'] * 1000)
+                });
+            }
+
+            setImagenes(response.data.results);
+            if (response.data.results.length === 0) {
                 setError("No se encontraron imágenes para esta búsqueda");
             }
         } catch (error) {
-            console.error("Error al buscar imágenes:", error);
-            setError(error.response?.data?.mensaje || "Error al conectar con el servidor. Intente de nuevo.");
+            console.error("Error al buscar imágenes:", error.response || error);
+            let mensajeError = "Error al buscar imágenes.";
+            if (error.response?.status === 403) {
+                mensajeError = "Error de autenticación con Unsplash.";
+            } else if (error.response?.status === 429) {
+                mensajeError = "Has alcanzado el límite de búsquedas. Por favor, espera un momento.";
+            }
+            setError(mensajeError);
             setImagenes([]);
         } finally {
             setLoading(false);
@@ -150,6 +192,35 @@ const BuscarImagenes = () => {
             </header>
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                {/* Rate Limit Warning */}
+                {rateLimit.remaining && parseInt(rateLimit.remaining) < 10 && (
+                    <div className="mb-6 bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-md" role="alert">
+                        <div className="flex">
+                            <div className="flex-shrink-0">
+                                <svg className="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                </svg>
+                            </div>
+                            <div className="ml-3">
+                                <p className="text-sm text-yellow-700">
+                                    <span className="font-medium">Atención:</span> Quedan {rateLimit.remaining} búsquedas disponibles de {rateLimit.limit} en esta hora.                                    {rateLimit.reset && (
+                                        <span className="ml-1">
+                                            El límite se restablecerá en {(() => {
+                                                const resetTime = new Date(rateLimit.reset);
+                                                if (!isNaN(resetTime.getTime())) {
+                                                    const minutesRemaining = Math.max(0, Math.floor((resetTime - new Date()) / 60000));
+                                                    return `${minutesRemaining} minutos`;
+                                                }
+                                                return 'una hora';
+                                            })()}.
+                                        </span>
+                                    )}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* Panel de búsqueda */}
                 <div className="bg-white rounded-xl shadow-md overflow-hidden mb-10">
                     <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-200">
@@ -269,6 +340,29 @@ const BuscarImagenes = () => {
                             </button>
                         </div>
                     </form>
+                    
+                    {/* Rate Limit Information */}
+                    <div className="px-6 pb-4 flex items-center justify-between text-sm text-gray-500">
+                        <div className="flex items-center space-x-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                            </svg>
+                            <span>
+                                Búsquedas restantes: {rateLimit.remaining}/{rateLimit.limit}
+                            </span>
+                        </div>                {rateLimit.reset && (
+                            <span>
+                                Se restablece en: {(() => {
+                                    const resetTime = new Date(rateLimit.reset);
+                                    if (!isNaN(resetTime.getTime())) {
+                                        const minutesRemaining = Math.max(0, Math.floor((resetTime - new Date()) / 60000));
+                                        return `${minutesRemaining} minutos`;
+                                    }
+                                    return 'una hora';
+                                })()}
+                            </span>
+                        )}
+                    </div>
                 </div>
                 
                 {/* Mensajes de error */}
@@ -322,43 +416,31 @@ const BuscarImagenes = () => {
                                             <div 
                                                 key={imagen.id} 
                                                 className="relative rounded-lg overflow-hidden cursor-pointer transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
-                                                onClick={() => abrirModal(imagen.urls.full)}
+                                                onClick={() => abrirModal(imagen.urls.regular)}
                                             >
                                                 <img
                                                     src={imagen.urls.small}
                                                     alt={imagen.alt_description || 'Imagen de búsqueda'}
                                                     className="w-full object-cover rounded-lg"
                                                     style={{
-                                                        height: 'auto',
-                                                        // Ajustamos altura según la proporción de la imagen 
-                                                        // (esto mantiene las proporciones originales)
+                                                        aspectRatio: `${imagen.width}/${imagen.height}`,
                                                     }}
                                                     loading="lazy"
                                                 />
                                                 
-                                                {/* Overlay con información al hacer hover */}
+                                                {/* Overlay con información */}
                                                 <div 
                                                     className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3 rounded-lg"
                                                 >
-                                                    {imagen.alt_description && (
-                                                        <p className="text-white text-sm font-medium line-clamp-2 mb-2">
-                                                            {imagen.alt_description}
-                                                        </p>
-                                                    )}
-                                                    
-                                                    <div className="flex justify-between items-center">
-                                                        <button 
-                                                            className="bg-white/20 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-full hover:bg-white/40 transition-colors"
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                abrirModal(imagen.urls.full);
-                                                            }}
-                                                        >
-                                                            Ver completa
-                                                        </button>
-                                                        
+                                                    <div className="flex flex-col space-y-2">
                                                         {imagen.user && (
-                                                            <div className="flex items-center gap-2">
+                                                            <a 
+                                                                href={imagen.user.links.html} 
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="flex items-center space-x-2 text-white hover:text-blue-200 transition-colors"
+                                                                onClick={(e) => e.stopPropagation()}
+                                                            >
                                                                 {imagen.user.profile_image?.small && (
                                                                     <img 
                                                                         src={imagen.user.profile_image.small} 
@@ -366,11 +448,31 @@ const BuscarImagenes = () => {
                                                                         className="w-6 h-6 rounded-full border border-white/30"
                                                                     />
                                                                 )}
-                                                                <span className="text-xs text-white/90 font-medium truncate max-w-[80px]">
+                                                                <span className="text-sm font-medium">
                                                                     {imagen.user.name}
                                                                 </span>
-                                                            </div>
+                                                            </a>
                                                         )}
+                                                        <div className="flex justify-between items-center">
+                                                            <a 
+                                                                href={imagen.links.html}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="bg-white/20 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-full hover:bg-white/40 transition-colors"
+                                                                onClick={(e) => e.stopPropagation()}
+                                                            >
+                                                                Ver en Unsplash
+                                                            </a>
+                                                            <button
+                                                                className="bg-white/20 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-full hover:bg-white/40 transition-colors"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    abrirModal(imagen.urls.regular);
+                                                                }}
+                                                            >
+                                                                Vista previa
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -403,32 +505,35 @@ const BuscarImagenes = () => {
                 </div>
             </footer>
             
-            {/* Modal para ver la imagen completa */}
+            {/* Modal para vista completa */}
             {modalOpen && (
                 <div 
-                    onClick={manejarClickFuera} 
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-90 backdrop-blur-sm transition-opacity duration-300"
+                    className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 sm:p-8"
+                    onClick={manejarClickFuera}
                 >
-                    <div className="relative max-w-5xl w-full max-h-[90vh] p-2">
-                        <div className="absolute top-2 right-2 z-10">
-                            <button 
-                                onClick={cerrarModal} 
-                                className="bg-white/20 hover:bg-white/40 text-white p-2 rounded-full backdrop-blur-sm transition-colors"
-                                aria-label="Cerrar"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                                </svg>
-                            </button>
+                    <div className="relative max-w-7xl w-full max-h-[90vh] flex flex-col items-center">
+                        {/* Botón cerrar */}
+                        <button
+                            onClick={cerrarModal}
+                            className="absolute -top-12 right-0 text-white/80 hover:text-white transition-colors"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+
+                        {/* Imagen */}
+                        <div className="relative w-full h-full flex items-center justify-center overflow-hidden">
+                            <img
+                                src={selectedImage}
+                                alt="Vista completa"
+                                className="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl"
+                            />
                         </div>
-                        <img 
-                            src={selectedImage} 
-                            alt="Imagen completa" 
-                            className="max-w-full max-h-[90vh] mx-auto object-contain rounded-lg" 
-                            loading="eager"
-                        />
-                        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black/40 text-white text-xs py-1 px-3 rounded-full backdrop-blur-sm">
-                            Presiona ESC o haz clic fuera para cerrar
+
+                        {/* Atribución Unsplash */}
+                        <div className="absolute bottom-4 left-4 text-white/80 text-sm">
+                            <p>Foto proporcionada por <a href="https://unsplash.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-white">Unsplash</a></p>
                         </div>
                     </div>
                 </div>
